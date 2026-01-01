@@ -14,13 +14,29 @@
 <body class="bg-gradient-to-br from-indigo-50 to-purple-100 min-h-screen">
 
   <div class="max-w-5xl mx-auto p-6">
+
     <!-- Header -->
-    <div class="text-center mb-10">
+    <div class="text-center mb-6">
       <h1 class="text-4xl font-extrabold text-indigo-700">
         📘 E-Book Builder
       </h1>
       <p class="text-gray-600 mt-2">
-        Buat e-book profesional dan simpan ke PDF
+        Buat e-book PDF profesional dengan mudah
+      </p>
+    </div>
+
+    <!-- Landing Page Promo -->
+    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
+      <h2 class="font-bold text-indigo-700 text-lg">
+        🎉 Upgrade ke Versi Premium
+      </h2>
+      <ul class="list-disc ml-5 text-gray-700 mt-2">
+        <li>Tanpa watermark</li>
+        <li>Hasil PDF lebih profesional</li>
+        <li>Cocok untuk tugas, jualan, dan bisnis</li>
+      </ul>
+      <p class="mt-2 font-semibold text-indigo-700">
+        Harga promo: Rp20.000 / e-book
       </p>
     </div>
 
@@ -42,17 +58,30 @@
         class="border rounded-xl p-4 w-full focus:ring-2 focus:ring-indigo-400"></textarea>
 
       <!-- Button -->
-      <div class="flex justify-end">
+      <div class="flex flex-col items-end">
         <button onclick="exportPDF()"
           class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg">
-          ⬇️ Export ke PDF
+          ⬇️ Export ke PDF (Versi Gratis)
         </button>
+
+        <p class="text-sm text-gray-500 mt-2">
+          Versi gratis memiliki watermark
+        </p>
+
+        <!-- WhatsApp -->
+        <a
+          href="https://wa.me/628XXXXXXXXXX"
+          target="_blank"
+          class="mt-4 text-green-600 font-semibold"
+        >
+          💬 Mau versi tanpa watermark? Hubungi WhatsApp
+        </a>
       </div>
 
     </div>
 
     <p class="text-center text-sm text-gray-500 mt-8">
-      © 2026 — E-Book Builder by Daffa
+      © 2026 — E-Book Builder
     </p>
   </div>
 
@@ -81,6 +110,16 @@
       doc.setFontSize(11);
       const lines = doc.splitTextToSize(content, 180);
       doc.text(lines, 10, y);
+
+      // WATERMARK VERSI GRATIS
+      doc.setTextColor(150);
+      doc.setFontSize(10);
+      doc.text(
+        "Dibuat dengan E-Book Builder (Versi Gratis)",
+        105,
+        290,
+        { align: "center" }
+      );
 
       doc.save(title + ".pdf");
     }
