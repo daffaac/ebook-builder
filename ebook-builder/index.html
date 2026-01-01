@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>E-Book Builder Pro</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Quill Editor -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body class="bg-slate-100 min-h-screen" id="body">
+
+<header class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow">
+  <h1 class="text-xl font-bold">📘 E-Book Builder Pro</h1>
+  <div class="flex gap-3">
+    <button onclick="toggleTheme()" class="px-3 py-1 bg-slate-700 rounded">🌗 Theme</button>
+    <button onclick="logout()" class="px-3 py-1 bg-red-600 rounded">Logout</button>
+  </div>
+</header>
+
+<!-- LOGIN -->
+<div id="loginPage" class="flex items-center justify-center h-[calc(100vh-64px)]">
+  <div class="bg-white p-6 rounded shadow w-80">
+    <h2 class="text-lg font-bold mb-4">Login</h2>
+    <input id="username" class="w-full mb-3 px-3 py-2 border rounded" placeholder="Nama Pengguna">
+    <button onclick="login()" class="w-full bg-blue-600 text-white py-2 rounded">Masuk</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden flex">
+
+  <aside class="w-72 bg-white h-[calc(100vh-64px)] p-5 border-r">
+    <h2 class="font-semibold mb-3">📖 Informasi Buku</h2>
+    <input id="bookTitle" class="w-full mb-2 px-3 py-2 border rounded" placeholder="Judul Buku">
+    <input id="author" class="w-full mb-4 px-3 py-2 border rounded" placeholder="Nama Penulis">
+
+    <h2 class="font-semibold mb-2">📚 Bab</h2>
+    <button onclick="addChapter()" class="w-full bg-blue-600 text-white py-2 rounded">+ Tambah Bab</button>
+    <ul id="chapters" class="mt-3 space-y-2 text-sm"></ul>
+
+    <hr class="my-4">
+    <button onclick="exportPDF()" class="w-full bg-emerald-600 text-white py-2 rounded">📄 Export PDF</button>
+  </aside>
+
+  <main class="flex-1 p-6">
+    <div class="bg-white rounded shadow p-4">
+      <div id="editor" class="h-[75vh]"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ===== LOGIN ===== */
+function login() {
+  const user = document.getElementById('username').value;
+  if (!user) return alert('Isi nama');
+  localStorage.setItem('user', user);
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  loadData();
+}
+function logout() {
+  localStorage.clear();
+  location.reload();
+}
+if (localStorage.getItem('user')) {
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+}
+
+/* ===== THEME ===== */
+function toggleTheme() {
+  document.body.classList.toggle('bg-slate-900');
+  document.body.classList.toggle('text-white');
+}
+
+/* ===== EDITOR ===== */
+const quill = new Quill('#editor', {
+  theme: 'snow',
+  modules: { toolbar: [[{ header: [1,2,3,false]}], ['bold','italic'], [{list:'ordered'},{list:'bullet'}]] }
+});
+
+let chapters = JSON.parse(localStorage.getItem('chapters')) || [];
+let currentChapter = null;
+
+function addChapter() {
+  const title = prompt('Judul Bab');
+  if (!title) return;
+  const chapter = { title, content: '' };
+  chapters.push(chapter);
+  saveData();
+  renderChapters();
+  loadChapter(chapter);
+}
+
+function loadChapter(ch) {
+  if (currentChapter) currentChapter.content = quill.root.innerHTML;
+  currentChapter = ch;
+  quill.root.innerHTML = ch.content;
+}
+
+function renderChapters() {
+  const ul = document.getElementById('chapters');
+  ul.innerHTML = '';
+  chapters.forEach(ch => {
+    const li = document.createElement('li');
+    li.textContent = ch.title;
+    li.className = 'cursor-pointer px-3 py-2 rounded hover:bg-slate-100';
+    li.onclick = () => loadChapter(ch);
+    ul.appendChild(li);
+  });
+}
+
+/* ===== AUTO SAVE ===== */
+setInterval(() => {
+  if (currentChapter) currentChapter.content = quill.root.innerHTML;
+  saveData();
+}, 2000);
+
+function saveData() {
+  localStorage.setItem('chapters', JSON.stringify(chapters));
+  localStorage.setItem('bookTitle', bookTitle.value);
+  localStorage.setItem('author', author.value);
+}
+
+function loadData() {
+  bookTitle.value = localStorage.getItem('bookTitle') || '';
+  author.value = localStorage.getItem('author') || '';
+  renderChapters();
+}
+
+/* ===== PDF + COVER ===== */
+function exportPDF() {
+  if (currentChapter) currentChapter.content = quill.root.innerHTML;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // COVER
+  doc.setFontSize(28);
+  doc.text(bookTitle.value || 'Judul Buku', 105, 120, { align: 'center' });
+  doc.setFontSize(16);
+  doc.text(author.value || '', 105, 140, { align: 'center' });
+  doc.addPage();
+
+  let y = 20;
+  chapters.forEach(ch => {
+    doc.setFontSize(18);
+    doc.text(ch.title, 10, y);
+    y += 10;
+    doc.setFontSize(12);
+    const text = ch.content.replace(/<[^>]*>/g, '');
+    const lines = doc.splitTextToSize(text, 180);
+    lines.forEach(l => {
+      if (y > 280) { doc.addPage(); y = 20; }
+      doc.text(l, 10, y); y += 6;
+    });
+    y += 10;
+  });
+
+  doc.save((bookTitle.value || 'ebook') + '.pdf');
+}
+</script>
+</body>
+</html>
